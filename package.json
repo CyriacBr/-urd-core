@@ -4,13 +4,19 @@
   "description": "",
   "main": "dist/index.js",
   "module": "dist/index.es.js",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -cw"
   },
   "author": "CyriacBr <cyriacbr@gmail.com>",
+  "repository": {
+    "type": "github",
+    "url": "https://github.com/CyriacBr/-urd-core.git"
+  },
   "license": "MIT",
   "devDependencies": {
     "rollup": "^1.1.2",
