@@ -2,11 +2,12 @@
   "compilerOptions": {
     "declaration": true,
     "declarationDir": "./dist",
-    "module": "es6",
+    "module": "es2015",
     "noImplicitAny": false,
     "outDir": "./dist",
-    "target": "es5"
+    "target": "es5",
+    "lib": ["es7"]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "tests/*"],
   "exclude": ["node_modules"]
 }

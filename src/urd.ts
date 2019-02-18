@@ -1,33 +1,124 @@
-import * as Parser from './parser.js';
-import { BlockMatch, Model, ModelPattern } from './model';
+import Parser from './parser';
+import { Model, ModelField } from './model';
+
+export type ModelPattern = {
+  path: string;
+  id: string;
+  realKey: string;
+} & ModelField;
+
+export interface BlockMatch {
+  match: boolean;
+  starting?: boolean;
+  ending?: boolean;
+  inline?: boolean;
+  parameter?: string;
+  prop?: string;
+  propPosition?: number;
+  propValue?: string;
+  isEval?: boolean;
+}
+
+export interface RawParseResultProps {
+  type: 'prop' | 'block' | 'text';
+  propName?: string;
+  value?: string;
+  tagName?: string;
+  param?: string;
+  isEval?: boolean;
+  asString: string;
+  content?: (RawParseResultProps | string)[];
+}
+
+export class RawParseResult extends Array {
+  [index: number]: RawParseResultProps;
+}
+
+export interface UrdObjectProps {
+  __isEval?: boolean;
+  __text?: string;
+  __param?: string;
+}
+
+export interface UrdObjectData {
+  [key: string]: UrdObjectProps | UrdObjectData;
+}
 
 export class Urd {
-  static parse(input: string) {
-    let result = Parser.parse(input);
-    let object = {};
-    const fill = (obj: any, set: any) => {
+  static parse(input: string, model: Model) {
+    let result = Parser.parse(input, {}) as RawParseResult;
+    let object = {} as UrdObjectData;
+
+    const fillProp = (obj: UrdObjectProps, data: RawParseResultProps) => {
+      const index = data.propName;
+      if (index in obj) {
+        if (Array.isArray(obj[index])) {
+          obj[index].push(data.value);
+        } else {
+          obj[index] = [obj[index], data.value];
+        }
+      } else {
+        obj[index] = data.value;
+      }
+    };
+
+    const fillBlock = (obj: UrdObjectProps, data: RawParseResultProps) => {
+      const index = data.tagName;
+      const param = data.param;
+      if (index in obj) {
+        if (Array.isArray(obj[index])) {
+          obj[index].push({
+            __param: param,
+            __isEval: data.isEval
+          });
+        } else {
+          obj[index] = [
+            obj[index],
+            {
+              __param: param,
+              __isEval: data.isEval
+            }
+          ];
+        }
+      } else {
+        obj[index] = {
+          __param: param,
+          __isEval: data.isEval
+        };
+      }
+      fill(Array.isArray(obj[index]) ? obj[index][obj[index].length - 1] : obj[index], data.content || ([] as any));
+    };
+
+    const fill = (obj: UrdObjectProps, set: RawParseResult) => {
       set = set.filter((i: any) => !!i);
-      obj.$text = [];
+      const text = [];
+
       for (const data of set) {
-        if (data.type === 'prop') {
-          obj[data.prop] = data.value;
-        } else if (data.type === 'tag') {
-          if (typeof data.tag === 'object') {
-            obj[data.tag.name] = {
-              $tag: data.tag.arg
-            };
-            fill(obj[data.tag.name], data.content || []);
-          } else {
-            obj[data.tag] = {};
-            fill(obj[data.tag], data.content || []);
-          }
-        } else if (typeof data === 'string') {
-          obj.$text.push(data);
+        switch (data.type) {
+          case 'prop':
+            fillProp(obj, data);
+            break;
+          case 'block':
+            fillBlock(obj, data);
+            break;
+          case 'text':
+            text.push(data.value.trim());
+            break;
+          default:
+            throw new Error('Invalid type');
         }
       }
-      obj.$text = obj.$text.join('\n');
+      obj.__text = text.join('\n');
     };
     fill(object, result);
+
+    for (const [key, value] of Object.entries(object)) {
+      if (key.startsWith('__')) continue;
+      object[key + 'Values'] = Array.isArray(value) ? [...value] : ([value] as any);
+      if (Array.isArray(value)) {
+        object[key] = value[0];
+      }
+    }
     return object;
   }
 
@@ -42,11 +133,8 @@ export class Urd {
           modelPatterns.push({
             id,
             path,
-            type: value.type,
-            desc: value.desc,
             realKey: key,
-            context: value.context,
-            suggestions: value.suggestions
+            ...value
           });
           if ('fields' in value) {
             path += '.' + id;

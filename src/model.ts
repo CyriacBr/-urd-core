@@ -9,26 +9,6 @@ export interface ModelField {
   fields?: { [index: string]: ModelField };
   context?: string;
   suggestions?: string[];
-}
-
-export interface ModelPattern {
-  type: 'string' | 'number' | 'text' | 'list' | 'code' | 'structure';
-  path: string;
-  id: string;
-  desc: string;
-  realKey: string;
-  context: string;
-  suggestions: string[];
-}
-
-export interface BlockMatch {
-  match: boolean;
-  starting?: boolean;
-  ending?: boolean;
-  inline?: boolean;
-  parameter?: string;
-  prop?: string;
-  propPosition?: number;
-  propValue?: string;
-  isEval?: boolean;
+  multiple?: boolean;
+  disableEval?: boolean;
 }
